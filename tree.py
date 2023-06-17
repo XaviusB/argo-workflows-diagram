@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 
-import argparse, os, yaml, pygraphviz
+import argparse
+import os
+import yaml
+import pygraphviz
 from graphviz2drawio import graphviz2drawio
 
 def flatten_yaml_array(data):
+    """Transform double dimension array into single."""
     result = []
 
     for item in data:
@@ -15,7 +19,7 @@ def flatten_yaml_array(data):
     return result
 
 def dag_to_graphviz(tasks, graph):
-
+    """Create a graphviz graph from a dag tasks."""
     for task in tasks:
         if 'dependencies' in task:
             for dependency in task['dependencies']:
@@ -30,6 +34,7 @@ def dag_to_graphviz(tasks, graph):
     return graph
 
 def steps_to_graphviz(tasks, graph):
+    """Create a graphviz graph from a steps tasks."""
     for index, task in enumerate(tasks):
         if index > 0:
             graph.add_edge(tasks[index - 1]['name'], task['name'])
@@ -41,17 +46,18 @@ def steps_to_graphviz(tasks, graph):
     return graph
 
 def change_extension(filename, new_extension):
+    """Change the extension of a file."""
     base_name = os.path.splitext(filename)[0]  # Get the base name of the file
     new_filename = base_name + new_extension   # Concatenate the base name with the new extension
     return new_filename
 
 def create_dag(yaml_file, output_file):
-
+    """Create a graphviz graph from a YAML file."""
     if not os.path.exists(yaml_file):
         print('The YAML file does not exist')
         exit(1)
 
-    with open(yaml_file, 'r') as file:
+    with open(yaml_file, 'r', encoding='utf8') as file:
         data = yaml.safe_load(file)
 
     if 'entrypoint' not in data['spec']:
@@ -60,7 +66,8 @@ def create_dag(yaml_file, output_file):
 
     entrypoint = data['spec']['entrypoint']
 
-    template = next((item for item in data['spec']['templates'] if item['name'] == entrypoint), None )
+    template = next((item for item in data['spec']['templates']
+                     if item['name'] == entrypoint), None )
 
     graph = pygraphviz.AGraph(directed=True)
     if 'dag' in template:
@@ -80,12 +87,14 @@ def create_dag(yaml_file, output_file):
         exit(1)
     # Save the graph as a PNG file
     graph.draw(output_file, prog='dot', format='png')
-    with open(change_extension(output_file, '.drawio'), 'w') as file:
+    with open(change_extension(output_file, '.drawio'), 'w', encoding='utf-8') as file:
         file.write(graphviz2drawio.convert(graph))
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Create a diagram of an Argo cluster workflow template dag tasks.')
+    """Main function."""
+    parser = argparse.ArgumentParser(
+        description='Create a diagram of an Argo cluster workflow template dag tasks.')
     parser.add_argument(
         '--input-file',
         dest='input_file',
@@ -98,7 +107,8 @@ def main():
         type=str,
         required=False,
         default='',
-        help='Path to the output PNG file. If not specified, the output file will be the same as the input file with the .png extension')
+        help='Path to the output PNG file. If not specified, the output file will be the same as' +
+             'the input file with the .png extension')
 
     args = parser.parse_args()
     if args.output_file == '':
