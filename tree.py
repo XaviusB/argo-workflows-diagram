@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
+"""Create a diagram of an Argo cluster workflow template dag tasks."""
+# Author:
+# - Xavier BOURDEAU
 
-import argparse
 import os
-import yaml
+import sys
+import argparse
 import pygraphviz
+import yaml
 from graphviz2drawio import graphviz2drawio
 
 def flatten_yaml_array(data):
@@ -31,6 +35,7 @@ def dag_to_graphviz(tasks, graph):
             node = graph.get_node(task['name'])
             node.attr['style'] = 'filled'
             node.attr['fillcolor'] = 'lightblue'
+
     return graph
 
 def steps_to_graphviz(tasks, graph):
@@ -55,14 +60,14 @@ def create_dag(yaml_file, output_file):
     """Create a graphviz graph from a YAML file."""
     if not os.path.exists(yaml_file):
         print('The YAML file does not exist')
-        exit(1)
+        sys.exit(1)
 
     with open(yaml_file, 'r', encoding='utf8') as file:
         data = yaml.safe_load(file)
 
     if 'entrypoint' not in data['spec']:
         print('The YAML file does not contain an entrypoint.')
-        exit(1)
+        sys.exit(1)
 
     entrypoint = data['spec']['entrypoint']
 
@@ -84,12 +89,11 @@ def create_dag(yaml_file, output_file):
         graph = steps_to_graphviz(tasks, graph)
     else:
         print('The YAML file does not contain a dag or steps.')
-        exit(1)
+        sys.exit(1)
     # Save the graph as a PNG file
     graph.draw(output_file, prog='dot', format='png')
     with open(change_extension(output_file, '.drawio'), 'w', encoding='utf-8') as file:
         file.write(graphviz2drawio.convert(graph))
-
 
 def main():
     """Main function."""
@@ -107,7 +111,7 @@ def main():
         type=str,
         required=False,
         default='',
-        help='Path to the output PNG file. If not specified, the output file will be the same as' +
+        help='Path to the output PNG file. If not specified, the output file will be the same as ' +
              'the input file with the .png extension')
 
     args = parser.parse_args()
